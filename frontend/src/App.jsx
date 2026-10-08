@@ -20,7 +20,7 @@ import { playNotificationSound } from './utils/notificationSound'; // NEU (Phase
 import './App.css';
 
 // Configuración de URLs
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001' : window.location.origin);
 const SOCKET_URL = API_URL;
 
 function App() {
@@ -1154,6 +1154,7 @@ function App() {
       <GlobalSearchModal
          isOpen={isSearchModalOpen}
          onClose={() => setIsSearchModalOpen(false)}
+        currentUser={user}
          allMessages={allMessages}
          groupMessages={groupMessages}
          groups={groups}

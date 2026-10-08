@@ -5,6 +5,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http'); // Necesario para Socket.IO
+const fs = require('fs');
+const path = require('path');
 const { Server } = require("socket.io"); // Importa Server de Socket.IO
 const db = require('./db');
 const bcrypt = require('bcryptjs');
@@ -21,7 +23,8 @@ const groupPermissions = require('./groupPermissions');
 // --- Lista de Orígenes Permitidos (para CORS) ---
 const allowedOrigins = [
     'http://localhost:5173', // Tu frontend dev
-    process.env.FRONTEND_URL // Lee de .env (ej: https://tu-app-deployada.com)
+    process.env.FRONTEND_URL,
+    process.env.RENDER_EXTERNAL_URL
 ].filter(Boolean); // filter(Boolean) elimina entradas undefined/null si FRONTEND_URL no está en .env
 
 // 2. Configuración de CORS para Rutas HTTP (Express)
@@ -47,10 +50,10 @@ const server = http.createServer(app); // Servidor HTTP que usa Express
 
 // 4. Inicialización de Socket.IO
 const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins, // Permite orígenes de la lista
+  cors: process.env.NODE_ENV === 'production' ? undefined : {
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
   }
 });
 
@@ -58,7 +61,9 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5001;
 
 // 6. Middlewares Express
-app.use(cors(corsOptions)); // Aplica CORS a las rutas HTTP
+if (process.env.NODE_ENV !== 'production') {
+  app.use(cors(corsOptions));
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -408,7 +413,14 @@ io.on('connection', (socket) => {
 // -----------------------------------------------------------------------------
 // 9. Definición de Rutas Express HTTP (API)
 // -----------------------------------------------------------------------------
-app.get('/', (req, res) => { res.send('API funcionando correctamente!'); });
+app.get('/health', async (req, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.status(200).json({ status: 'ok', database: 'ok' });
+  } catch (err) {
+    res.status(503).json({ status: 'error', database: 'unavailable' });
+  }
+});
 
 // Ruta Registro (sin cambios)
 app.post('/api/auth/register', async (req, res) => {
@@ -1458,6 +1470,15 @@ app.delete('/api/favorites/:messageType/:messageId', authMiddleware, async (req,
 // -----------------------------------------------------------------------------
 // 10. Inicio del Servidor
 // -----------------------------------------------------------------------------
+const frontendBuildPath = path.resolve(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendBuildPath)) {
+  app.use(express.static(frontendBuildPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(frontendBuildPath, 'index.html'));
+  });
+}
+
 server.listen(PORT, () => {
   console.log(`Servidor (HTTP + WebSocket) corriendo en http://localhost:${PORT}`);
   // Verificar conexión a DB al inicio

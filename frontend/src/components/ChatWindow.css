@@ -256,6 +256,55 @@
   margin-top: 4px;
 }
 
+.message-forwarded,
+.message-edited {
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+.message-deleted {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: 4px -5px -4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.message:hover .message-actions,
+.message:focus-within .message-actions {
+  opacity: 1;
+}
+
+.message-actions button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(0, 0, 0, 0.12);
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.message-actions button:hover,
+.message-actions button.is-favorite {
+  color: #fde68a;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+@media (hover: none) {
+  .message-actions { opacity: 1; }
+}
+
 @media (max-width: 768px) {
   .chat-back-btn {
     display: flex;

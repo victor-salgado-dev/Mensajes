@@ -1,10 +1,11 @@
 // frontend/src/components/LoginForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { FiUser } from 'react-icons/fi';
 import './AuthForm.css';
 
 // Usa la variable de entorno VITE_API_URL o un valor por defecto
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5001' : window.location.origin);
 
 // Recibe la función onLoginSuccess de App.jsx
 // <<< CAMBIO: La prop onAuthFailure ahora también se recibe (importante para errores) >>>
@@ -28,16 +29,16 @@ const LoginForm = ({ onLoginSuccess, onAuthFailure }) => {
   };
 
   // Manejador para el envío del formulario
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Previene el comportamiento por defecto del formulario
+  const handleSubmit = async (e, credentials = formData) => {
+    e?.preventDefault(); // Previene el comportamiento por defecto del formulario
     setErrorMessage(''); // Limpia errores anteriores
     setIsLoading(true); // Indica que la carga ha comenzado
-    console.log('Datos a enviar (Login):', formData);
+    console.log('Datos a enviar (Login):', credentials);
     console.log(`Usando API URL base: ${API_BASE_URL}`);
 
     try {
       const apiUrl = `${API_BASE_URL}/api/auth/login`; // Construye la URL completa
-      const response = await axios.post(apiUrl, formData); // Envía la petición POST
+      const response = await axios.post(apiUrl, credentials); // Envía la petición POST
 
       console.log('Respuesta del servidor (Login):', response.data);
 
@@ -91,6 +92,12 @@ const LoginForm = ({ onLoginSuccess, onAuthFailure }) => {
     }
   };
 
+  const handleDemoLogin = (username) => {
+    const credentials = { username, password: 'Demo123!' };
+    setFormData(credentials);
+    handleSubmit(null, credentials);
+  };
+
   // Renderizado del componente
   return (
     <form onSubmit={handleSubmit} className="auth-form">
@@ -130,6 +137,17 @@ const LoginForm = ({ onLoginSuccess, onAuthFailure }) => {
          {/* <<< CAMBIO: Textos del botón traducidos >>> */}
          {isLoading ? 'Melde an...' : 'Anmelden'}
       </button>
+      <div className="demo-login-actions">
+        <p>Acceso de prueba</p>
+        <div className="demo-login-buttons">
+          <button type="button" className="demo-login-btn" disabled={isLoading} onClick={() => handleDemoLogin('Anna')}>
+            <FiUser /> Entrar como Anna
+          </button>
+          <button type="button" className="demo-login-btn" disabled={isLoading} onClick={() => handleDemoLogin('Ben')}>
+            <FiUser /> Entrar como Ben
+          </button>
+        </div>
+      </div>
       {/* Muestra el mensaje de error si existe (el mensaje ya está traducido en el estado) */}
       {errorMessage && <p id="login-error-message" className="form-message form-message-error">{errorMessage}</p>}
     </form>

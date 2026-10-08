@@ -1,6 +1,6 @@
 // frontend/src/components/ChatWindow.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { FiMessageCircle, FiArrowLeft, FiMoreVertical, FiUserMinus, FiSlash, FiCheck, FiClock } from 'react-icons/fi';
+import { FiMessageCircle, FiArrowLeft, FiMoreVertical, FiUserMinus, FiSlash, FiCheck, FiClock, FiEdit2, FiTrash2, FiStar, FiShare2, FiMapPin } from 'react-icons/fi';
 import MessageInput from './MessageInput'; // Stelle sicher, dass die Texte hier auch übersetzt sind
 import Avatar from './Avatar';
 import './ChatWindow.css';
@@ -64,7 +64,7 @@ const formatLastSeen = (dateString) => {
 // - onTyping / isPartnerTyping / partnerLastSeenAt: NEU (Phase 3) — Tipp-Indikator und
 //   "zuletzt online". Alle optional/additiv.
 
-const ChatWindow = ({ currentUser, chatPartner, messages, onSendMessage, statusMessage, isConnected, onBackToList, isPartnerOnline, onRemoveContact, onBlockContact, onTyping, isPartnerTyping, partnerLastSeenAt }) => {
+const ChatWindow = ({ currentUser, chatPartner, messages, onSendMessage, statusMessage, isConnected, onBackToList, isPartnerOnline, onRemoveContact, onBlockContact, onTyping, isPartnerTyping, partnerLastSeenAt, onEditMessage, onDeleteMessage, onPinMessage, onUnpinMessage, onForwardMessage, favoriteIds, onToggleFavorite }) => {
   // Referenz für das automatische Scrollen der Nachrichtenliste
   const messageListRef = useRef(null);
   // NEU (Phase 2): rein lokaler UI-Zustand für das Options-Menü im Header
@@ -220,21 +220,37 @@ const ChatWindow = ({ currentUser, chatPartner, messages, onSendMessage, statusM
 
         {/* Mapping der als Prop empfangenen Nachrichten */}
         {messages.map((msg) => (
+          (() => {
+            const isOwn = msg.sender.id === currentUser.id;
+            const isFavorite = favoriteIds?.has(`direct:${msg.id}`);
+            const isDeleted = !msg.content;
+            return (
           <div
-            key={msg.id || `temp-${msg.sender.id}-${msg.content.substring(0, 5)}-${Date.now()}`}
-            className={`message ${msg.sender.id === currentUser.id ? 'message-own' : 'message-received'}`}
+            key={msg.id || `temp-${msg.sender.id}-${(msg.content || '').substring(0, 5)}-${Date.now()}`}
+            className={`message ${isOwn ? 'message-own' : 'message-received'}`}
           >
+            {msg.forwardedFromUsername && <div className="message-forwarded">Reenviado de {msg.forwardedFromUsername}</div>}
             {/* Inhalt der Nachricht */}
-            <div className="message-content">{msg.content}</div>
+            <div className={`message-content ${isDeleted ? 'message-deleted' : ''}`}>{msg.content || 'Mensaje eliminado'}</div>
+            {msg.editedAt && !isDeleted && <div className="message-edited">Editado</div>}
             {/* Zeitstempel */}
             <div className="message-time">
               {/* <<< CAMBIO: Text übersetzt >>> */}
               {/* Zeigt 'Senden...' wenn createdAt noch nicht vorhanden ist */}
               {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Senden...'}
               {/* NEU (Phase 3): Zustellstatus nur bei eigenen Nachrichten */}
-              {msg.sender.id === currentUser.id && <MessageStatusTicks message={msg} />}
+              {isOwn && <MessageStatusTicks message={msg} />}
             </div>
+            {!isDeleted && msg.id && <div className="message-actions">
+              {isOwn && onEditMessage && <button type="button" title="Editar mensaje" aria-label="Editar mensaje" onClick={() => { const content = window.prompt('Editar mensaje', msg.content); if (content?.trim()) onEditMessage(msg.id, content); }}><FiEdit2 /></button>}
+              {isOwn && onDeleteMessage && <button type="button" title="Eliminar mensaje" aria-label="Eliminar mensaje" onClick={() => { if (window.confirm('Eliminar este mensaje?')) onDeleteMessage(msg.id); }}><FiTrash2 /></button>}
+              {onPinMessage && <button type="button" title={msg.pinnedAt ? 'Desfijar mensaje' : 'Fijar mensaje'} aria-label={msg.pinnedAt ? 'Desfijar mensaje' : 'Fijar mensaje'} onClick={() => (msg.pinnedAt ? onUnpinMessage?.(msg.id) : onPinMessage(msg.id))}><FiMapPin /></button>}
+              {onToggleFavorite && <button type="button" title={isFavorite ? 'Quitar de guardados' : 'Guardar mensaje'} aria-label={isFavorite ? 'Quitar de guardados' : 'Guardar mensaje'} className={isFavorite ? 'is-favorite' : ''} onClick={() => onToggleFavorite('direct', msg.id, Boolean(isFavorite))}><FiStar /></button>}
+              {onForwardMessage && <button type="button" title="Reenviar mensaje" aria-label="Reenviar mensaje" onClick={() => onForwardMessage({ content: msg.content, forwardedFromUsername: msg.forwardedFromUsername || msg.sender.username })}><FiShare2 /></button>}
+            </div>}
           </div>
+            );
+          })()
         ))}
       </div>
 

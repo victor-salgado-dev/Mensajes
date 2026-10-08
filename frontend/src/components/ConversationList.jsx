@@ -14,7 +14,7 @@
 // bleiben dadurch unverändert. Gruppen rufen stattdessen die NEUE, separate
 // Prop onSelectGroup auf.
 import React, { useState } from 'react';
-import { FiSearch, FiUserPlus, FiUsers } from 'react-icons/fi';
+import { FiSearch, FiStar, FiUserPlus, FiUsers } from 'react-icons/fi';
 import Avatar from './Avatar';
 import './ConversationList.css';
 
@@ -38,6 +38,8 @@ const ConversationList = ({
   onSelectGroup, // NEU (Phase 4)
   activeGroupId, // NEU (Phase 4)
   onOpenCreateGroup, // NEU (Phase 4)
+  onOpenSearch,
+  onOpenFavorites,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -61,6 +63,12 @@ const ConversationList = ({
       <div className="conversation-list-header">
         <h4>Unterhaltungen</h4>
         <div className="conversation-header-actions">
+          <button type="button" className="conversation-contacts-btn" onClick={onOpenSearch} aria-label="Buscar en mensajes" title="Buscar en mensajes">
+            <FiSearch />
+          </button>
+          <button type="button" className="conversation-contacts-btn" onClick={onOpenFavorites} aria-label="Mensajes guardados" title="Mensajes guardados">
+            <FiStar />
+          </button>
           {/* NEU (Phase 4): neue Gruppe erstellen */}
           <button
             type="button"

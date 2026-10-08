@@ -2,15 +2,22 @@
 const { Pool } = require('pg');
 require('dotenv').config(); // Asegura que las variables de .env estén disponibles
 
-// Configuración de la conexión usando la variable de entorno DATABASE_URL
-const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
-};
+// Render usa PostgreSQL local dentro del contenedor. Fuera de Docker se puede
+// seguir usando DATABASE_URL para desarrollo con una base remota.
+const poolConfig = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL }
+  : {
+      host: process.env.PGHOST || '127.0.0.1',
+      port: Number(process.env.PGPORT || 5432),
+      database: process.env.PGDATABASE || 'mensajes',
+      user: process.env.PGUSER || 'mensajes_app',
+      password: process.env.PGPASSWORD || '',
+    };
 
 // IMPORTANTE: Añadir configuración SSL requerida por Render
 // Solo aplica SSL en producción (cuando NODE_ENV es 'production')
 // o si la URL de conexión incluye explícitamente Render (más seguro para desarrollo local)
-if (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL.includes('render.com')) {
+if (process.env.DATABASE_URL && (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL.includes('render.com'))) {
   poolConfig.ssl = {
     rejectUnauthorized: false // Necesario para conexiones a bases de datos gestionadas como las de Render/Heroku
   };
